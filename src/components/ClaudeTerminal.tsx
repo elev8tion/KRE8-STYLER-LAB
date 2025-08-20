@@ -20,10 +20,17 @@ interface Message {
   processing?: boolean;
 }
 
+// Message ID generator to ensure unique keys
+let messageIdCounter = 0;
+const generateMessageId = () => {
+  messageIdCounter++;
+  return `msg-${Date.now()}-${messageIdCounter}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
 export default function ClaudeTerminal({ onClose }: ClaudeTerminalProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
+      id: generateMessageId(),
       role: 'assistant',
       content: `Welcome to **Claude Terminal** - I have full access to your system!
 
@@ -76,7 +83,7 @@ Try:
           } else if (data.type === 'result') {
             // Handle command results
             const resultMessage: Message = {
-              id: Date.now().toString(),
+              id: generateMessageId(),
               role: 'assistant',
               content: `\`\`\`bash\n${data.output || data.error || 'Command completed'}\n\`\`\``,
               timestamp: new Date(),
@@ -143,7 +150,7 @@ Try:
 
   const executeCommand = async (command: string) => {
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       role: 'user',
       content: command,
       timestamp: new Date(),
@@ -176,7 +183,7 @@ Try:
           const output = result.output || result.error || 'No output';
           
           const responseMessage: Message = {
-            id: Date.now().toString(),
+            id: generateMessageId(),
             role: 'command',
             content: `\`\`\`bash\n$ ${bashCommand}\n${output}\n\`\`\``,
             timestamp: new Date(),
@@ -200,7 +207,7 @@ Try:
           : `\`\`\`\n${result.content}\n\`\`\``;
         
         const responseMessage: Message = {
-          id: Date.now().toString(),
+          id: generateMessageId(),
           role: 'assistant',
           content,
           timestamp: new Date(),
@@ -213,7 +220,7 @@ Try:
         abortControllerRef.current = new AbortController();
         
         const processingMessage: Message = {
-          id: Date.now().toString(),
+          id: generateMessageId(),
           role: 'assistant',
           content: '',
           timestamp: new Date(),
@@ -252,7 +259,7 @@ Try:
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         const errorMessage: Message = {
-          id: Date.now().toString(),
+          id: generateMessageId(),
           role: 'system',
           content: `Error: ${err.message || 'Failed to process command'}`,
           timestamp: new Date(),
@@ -340,13 +347,14 @@ Try:
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-sm">
-          <AnimatePresence>
+          <AnimatePresence mode="popLayout">
             {messages.map((message) => (
               <motion.div
                 key={message.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`max-w-[85%] rounded-lg px-4 py-3 ${
