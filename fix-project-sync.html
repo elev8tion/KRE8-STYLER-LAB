@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Project Data Sync</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .url-box {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .correct {
+            color: #00ff77;
+            font-size: 18px;
+        }
+        .wrong {
+            color: #ff5500;
+            text-decoration: line-through;
+        }
+        button {
+            background: linear-gradient(135deg, #00ddff, #ff00de);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        .data-info {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Let's Fix Your Project Manager Sync</h1>
+        
+        <h2>📍 The CORRECT URL to use:</h2>
+        <div class="url-box">
+            <p class="correct">✅ file:///Users/cc/universal-project-manager/index.html?project=kre8-styler-lab</p>
+        </div>
+        
+        <h2>❌ URLs that might cause confusion:</h2>
+        <div class="url-box">
+            <p class="wrong">❌ file:///Users/cc/universal-project-manager/dashboard.html</p>
+            <p class="wrong">❌ file:///Users/cc/kre8-styler-lab/kre8-styler-lab/KRE8-STYLER-PROJECT-MANAGER.html</p>
+            <p class="wrong">❌ Any URL without ?project=kre8-styler-lab</p>
+        </div>
+        
+        <h2>🔍 Current Data Status:</h2>
+        <div class="data-info" id="data-status">
+            Checking your localStorage data...
+        </div>
+        
+        <h2>🚀 Actions:</h2>
+        <div>
+            <button onclick="openCorrectURL()">Open Correct Project Manager</button>
+            <button onclick="checkAllData()">Check All Project Data</button>
+            <button onclick="forceSync()">Force Data Sync</button>
+            <button onclick="clearWrongData()">Clear Wrong Storage Keys</button>
+        </div>
+        
+        <div id="results" style="margin-top: 30px;"></div>
+    </div>
+    
+    <script>
+        // Check data on load
+        window.onload = function() {
+            checkAllData();
+        };
+        
+        function checkAllData() {
+            const results = [];
+            const projectKeys = [];
+            
+            // Find all project-related keys in localStorage
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('project') || key.includes('universal'))) {
+                    projectKeys.push(key);
+                    const data = localStorage.getItem(key);
+                    try {
+                        const parsed = JSON.parse(data);
+                        results.push({
+                            key: key,
+                            hasData: true,
+                            itemCount: Object.keys(parsed).length,
+                            hasPhases: !!parsed.phases,
+                            phaseCount: parsed.phases ? parsed.phases.length : 0,
+                            hasWins: !!parsed.wins,
+                            winsCount: parsed.wins ? parsed.wins.length : 0
+                        });
+                    } catch (e) {
+                        results.push({
+                            key: key,
+                            hasData: false,
+                            error: e.message
+                        });
+                    }
+                }
+            }
+            
+            // Display results
+            let html = '<h3>Found ' + projectKeys.length + ' project-related storage keys:</h3>';
+            html += '<ul>';
+            results.forEach(r => {
+                if (r.hasData) {
+                    html += `<li><strong>${r.key}</strong>: 
+                        ${r.itemCount} items, 
+                        ${r.phaseCount} phases, 
+                        ${r.winsCount} wins
+                        ${r.key === 'project-kre8-styler-lab' ? ' ✅ CORRECT KEY' : ''}
+                    </li>`;
+                } else {
+                    html += `<li><strong>${r.key}</strong>: Error - ${r.error}</li>`;
+                }
+            });
+            html += '</ul>';
+            
+            document.getElementById('data-status').innerHTML = html;
+            
+            // Check the correct key specifically
+            const correctData = localStorage.getItem('project-kre8-styler-lab');
+            if (correctData) {
+                const parsed = JSON.parse(correctData);
+                if (parsed.phases && parsed.phases.length > 0) {
+                    document.getElementById('results').innerHTML = 
+                        '<div style="background: rgba(0,255,119,0.2); padding: 20px; border-radius: 10px;">' +
+                        '<h3>✅ Your data is in the correct place!</h3>' +
+                        '<p>Found ' + parsed.phases.length + ' phases including Vision 2025 milestones</p>' +
+                        '</div>';
+                }
+            }
+        }
+        
+        function openCorrectURL() {
+            window.open('file:///Users/cc/universal-project-manager/index.html?project=kre8-styler-lab', '_blank');
+        }
+        
+        function forceSync() {
+            // Get the most complete data from any key
+            let bestData = null;
+            let maxItems = 0;
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes('project')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        const itemCount = (data.phases?.length || 0) + 
+                                        (data.wins?.length || 0) + 
+                                        (data.losses?.length || 0);
+                        if (itemCount > maxItems) {
+                            maxItems = itemCount;
+                            bestData = data;
+                        }
+                    } catch (e) {}
+                }
+            }
+            
+            if (bestData) {
+                // Save to the correct key
+                localStorage.setItem('project-kre8-styler-lab', JSON.stringify(bestData));
+                document.getElementById('results').innerHTML = 
+                    '<div style="background: rgba(0,255,119,0.2); padding: 20px; border-radius: 10px;">' +
+                    '<h3>✅ Data synced to correct key!</h3>' +
+                    '<p>Merged best available data with ' + maxItems + ' total items</p>' +
+                    '</div>';
+                
+                setTimeout(() => {
+                    openCorrectURL();
+                }, 2000);
+            }
+        }
+        
+        function clearWrongData() {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes('universal-project')) {
+                    keysToRemove.push(key);
+                }
+            }
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            document.getElementById('results').innerHTML = 
+                '<div style="background: rgba(255,85,0,0.2); padding: 20px; border-radius: 10px;">' +
+                '<h3>🧹 Cleaned up ' + keysToRemove.length + ' incorrect storage keys</h3>' +
+                '</div>';
+            
+            setTimeout(checkAllData, 1000);
+        }
+    </script>
+</body>
+</html>

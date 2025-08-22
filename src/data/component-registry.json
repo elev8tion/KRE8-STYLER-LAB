@@ -1,0 +1,138 @@
+{
+  "components": {
+    "holo-loader-main": {
+      "name": "Holographic Loader",
+      "path": "@/components/HolographicLoader",
+      "description": "Main holographic animation with sphere, rings, particles",
+      "usedIn": ["/", "/claude-dashboard"],
+      "modifications": [],
+      "props": {
+        "scale": "1.2",
+        "width": "360px",
+        "height": "360px"
+      },
+      "created": "2024-01-01",
+      "lastModified": "2024-01-01"
+    },
+    "holo-bg": {
+      "name": "Holographic Background",
+      "path": "@/components/HolographicBackground",
+      "description": "Background wrapper with reduced opacity loader",
+      "usedIn": ["/claude-dashboard"],
+      "modifications": [],
+      "props": {
+        "opacity": "0.2",
+        "blur": "0.3px"
+      }
+    },
+    "cyber-card-horizontal": {
+      "name": "Cyber Card (Horizontal)",
+      "path": "@/components/CyberCard",
+      "description": "3D hover effect card with cyber aesthetics",
+      "usedIn": ["/claude-dashboard"],
+      "modifications": ["Reduced size to 240x80", "Removed hover requirement", "Always visible text"],
+      "props": {
+        "horizontal": true,
+        "width": "240px",
+        "height": "80px"
+      }
+    },
+    "animated-btn-holo": {
+      "name": "Animated Button (Holographic)",
+      "path": "@/components/AnimatedButton",
+      "description": "Button with glow effects and particles",
+      "usedIn": ["/claude-dashboard"],
+      "modifications": [],
+      "variants": ["holographic", "primary", "secondary"],
+      "sizes": ["small", "medium", "large"]
+    },
+    "animated-input": {
+      "name": "Animated Input",
+      "path": "@/components/AnimatedInput",
+      "description": "Input field with scan line and glow effects",
+      "usedIn": ["/claude-dashboard"],
+      "modifications": [],
+      "props": {
+        "scanLine": true,
+        "glowEffect": true
+      }
+    },
+    "animated-card": {
+      "name": "Animated Card",
+      "path": "@/components/AnimatedCard",
+      "description": "Card with corner accents and border flow",
+      "usedIn": [],
+      "modifications": ["Replaced with CyberCard"],
+      "deprecated": true
+    },
+    "metatron-cube": {
+      "name": "Metatron's Cube SVG",
+      "path": "Inside HolographicLoader",
+      "description": "Sacred geometry background element",
+      "usedIn": ["HolographicLoader"],
+      "modifications": ["Resized to 400px", "Opacity set to 0.5"],
+      "props": {
+        "width": "400px",
+        "height": "400px",
+        "opacity": "0.5",
+        "rotationSpeed": "60s"
+      }
+    },
+    "scrolling-code": {
+      "name": "Scrolling Code Lines",
+      "path": "Inside HolographicLoader",
+      "description": "Animated code/formula scrolling text",
+      "usedIn": ["HolographicLoader"],
+      "modifications": ["Increased font size to 14px", "Increased opacity to 1.0", "Enhanced glow effect"],
+      "props": {
+        "fontSize": "14px",
+        "opacity": "1.0",
+        "animationDuration": "15s"
+      },
+      "pendingChanges": ["Replace with custom quotes and formulas"]
+    }
+  },
+  "pages": {
+    "/": {
+      "name": "Home",
+      "components": ["holo-loader-main"],
+      "description": "Landing page with centered holographic loader"
+    },
+    "/claude-dashboard": {
+      "name": "Claude Dashboard",
+      "components": ["holo-bg", "cyber-card-horizontal", "animated-btn-holo", "animated-input"],
+      "description": "Chat interface with MCP bridge status"
+    },
+    "/style-guide": {
+      "name": "Style Guide",
+      "components": ["all"],
+      "description": "Component showcase and registry"
+    }
+  },
+  "themes": {
+    "cyberpunk": {
+      "primary": "#00ddff",
+      "secondary": "#ff00dd",
+      "accent": "#00ff88",
+      "background": "#000000",
+      "surface": "rgba(0, 0, 0, 0.5)"
+    }
+  },
+  "correlations": {
+    "input-button-pair": {
+      "components": ["animated-input", "animated-btn-holo"],
+      "description": "Input and button work together in chat interface",
+      "location": "/claude-dashboard"
+    },
+    "status-cards": {
+      "components": ["cyber-card-horizontal"],
+      "description": "Multiple instances showing system status",
+      "location": "/claude-dashboard sidebar"
+    },
+    "background-effects": {
+      "components": ["holo-bg", "metatron-cube"],
+      "description": "Layered background effects",
+      "location": "All pages"
+    }
+  }
+}

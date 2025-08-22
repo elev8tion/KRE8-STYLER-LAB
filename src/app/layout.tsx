@@ -1,12 +1,27 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Orbitron, Fira_Code } from "next/font/google";
+import StyledComponentsRegistry from "@/lib/styled-components-registry";
+import HolographicBackground from "@/components/HolographicBackground";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: '--font-inter'
+});
+
+const orbitron = Orbitron({ 
+  subsets: ["latin"],
+  variable: '--font-orbitron'
+});
+
+const firaCode = Fira_Code({ 
+  subsets: ["latin"],
+  variable: '--font-fira-code'
+});
 
 export const metadata: Metadata = {
-  title: "KRE8-Styler Lab",
-  description: "Premium local LLM workspace with seamless model switching",
+  title: "The Lab - KRE8-Styler",
+  description: "Holographic AI Command Center - Where KRE8tivity Meets Intelligence",
 };
 
 export default function RootLayout({
@@ -16,8 +31,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-gray-950 text-gray-100 antialiased`}>
-        {children}
+      <body 
+        className={`${inter.variable} ${orbitron.variable} ${firaCode.variable} font-sans bg-black text-gray-100 antialiased`}
+        suppressHydrationWarning={true}
+      >
+        <StyledComponentsRegistry>
+          <HolographicBackground />
+          <div className="relative z-10">
+            {children}
+          </div>
+        </StyledComponentsRegistry>
       </body>
     </html>
   );

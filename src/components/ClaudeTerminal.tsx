@@ -24,7 +24,7 @@ interface Message {
 let messageIdCounter = 0;
 const generateMessageId = () => {
   messageIdCounter++;
-  return `msg-${Date.now()}-${messageIdCounter}-${Math.random().toString(36).substr(2, 9)}`;
+  return `msg-${Date.now()}-${messageIdCounter}-${Math.random().toString(36).substring(2, 9)}`;
 };
 
 export default function ClaudeTerminal({ onClose }: ClaudeTerminalProps) {
@@ -51,6 +51,7 @@ Try:
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [availableTools, setAvailableTools] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -59,12 +60,20 @@ Try:
 
   // Connect to WebSocket
   const connectWebSocket = useCallback(() => {
+    // Prevent multiple connections
+    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || 
+        wsRef.current.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    
     try {
-      wsRef.current = new WebSocket('ws://localhost:3002');
+      console.log('Creating new WebSocket connection...');
+      wsRef.current = new WebSocket('ws://localhost:3007');
       
       wsRef.current.onopen = () => {
         console.log('Connected to Claude Bridge');
         setConnectionStatus('connected');
+        setConnectionError(null);
         wsRef.current?.send(JSON.stringify({ 
           type: 'init', 
           sessionId: sessionId.current 
@@ -77,9 +86,9 @@ Try:
           
           if (data.type === 'initialized') {
             setConnectionStatus('connected');
-            if (data.mcpReady) {
-              fetchAvailableTools();
-            }
+            setConnectionError(null);
+            // Fetch available tools when connected
+            fetchAvailableTools();
           } else if (data.type === 'result') {
             // Handle command results
             const resultMessage: Message = {
@@ -109,14 +118,21 @@ Try:
       };
       
       wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        // Don't log as error, it's expected when server is starting
+        console.log('WebSocket connection error - will retry');
         setConnectionStatus('error');
+        setConnectionError('Connecting to bridge server...');
       };
       
-      wsRef.current.onclose = () => {
+      wsRef.current.onclose = (event) => {
+        console.log('WebSocket closed:', event.code, event.reason);
         setConnectionStatus('connecting');
-        // Reconnect after 3 seconds
-        setTimeout(connectWebSocket, 3000);
+        setConnectionError(`Connection closed: ${event.reason || 'Unknown reason'}`);
+        // Only reconnect if not manually closed
+        if (event.code !== 1000 && event.code !== 1001) {
+          wsRef.current = null;
+          setTimeout(connectWebSocket, 3000);
+        }
       };
     } catch (err) {
       console.error('Failed to connect:', err);
@@ -127,7 +143,7 @@ Try:
   // Fetch available MCP tools
   const fetchAvailableTools = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/mcp/tools');
+      const response = await fetch('http://localhost:3006/api/mcp/tools');
       const data = await response.json();
       if (data.tools) {
         setAvailableTools(data.tools);
@@ -173,7 +189,7 @@ Try:
           }));
         } else {
           // Fallback to HTTP
-          const response = await fetch('http://localhost:3001/api/bash', {
+          const response = await fetch('http://localhost:3006/api/bash', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ command: bashCommand }),
@@ -195,7 +211,7 @@ Try:
       } else if (command.toLowerCase().startsWith('read ')) {
         // File read command
         const filePath = command.slice(5).trim();
-        const response = await fetch('http://localhost:3001/api/file/read', {
+        const response = await fetch('http://localhost:3006/api/file/read', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path: filePath }),
@@ -229,7 +245,7 @@ Try:
         
         setMessages(prev => [...prev, processingMessage]);
         
-        const response = await fetch('http://localhost:3001/api/claude', {
+        const response = await fetch('http://localhost:3006/api/claude', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -291,21 +307,21 @@ Try:
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
     >
       <motion.div
         initial={{ y: 20 }}
         animate={{ y: 0 }}
-        className="w-full max-w-6xl h-[80vh] bg-gray-950 border border-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="w-full max-w-6xl h-[80vh] bg-gray-950/90 backdrop-blur-md border border-cyan-900/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gradient-to-r from-purple-950/30 to-pink-950/30">
+        <div className="flex items-center justify-between p-4 border-b border-cyan-900/30 bg-gradient-to-r from-cyan-950/40 to-magenta-950/40">
           <div className="flex items-center space-x-3">
             <div className="relative">
               <FiCpu className="text-2xl text-purple-400" />
               <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-green-400' : 
-                connectionStatus === 'error' ? 'bg-red-400' : 'bg-yellow-400'
+                connectionStatus === 'connected' ? 'bg-cyan-400 shadow-lg shadow-cyan-400/50' : 
+                connectionStatus === 'error' ? 'bg-red-400 shadow-lg shadow-red-400/50' : 'bg-yellow-400 shadow-lg shadow-yellow-400/50'
               } animate-pulse`} />
             </div>
             <div>
@@ -325,13 +341,13 @@ Try:
 
         {/* Tools Bar */}
         {availableTools.length > 0 && (
-          <div className="px-4 py-2 border-b border-gray-800 bg-gray-900/50">
+          <div className="px-4 py-2 border-b border-cyan-900/30 bg-gray-900/50 backdrop-blur-md">
             <div className="flex items-center space-x-2 text-xs">
               <FiTool className="text-purple-400" />
               <span className="text-gray-400">Available:</span>
               <div className="flex flex-wrap gap-1">
                 {availableTools.slice(0, 10).map((tool, idx) => (
-                  <span key={idx} className="px-2 py-0.5 bg-purple-900/30 text-purple-300 rounded">
+                  <span key={idx} className="px-2 py-0.5 bg-cyan-900/30 text-cyan-300 rounded border border-cyan-700/20">
                     {tool}
                   </span>
                 ))}
@@ -357,14 +373,14 @@ Try:
                 transition={{ duration: 0.2 }}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[85%] rounded-lg px-4 py-3 ${
+                <div className={`max-w-[85%] rounded-lg px-4 py-3 backdrop-blur-sm ${
                   message.role === 'user' 
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' 
+                    ? 'bg-gradient-to-r from-cyan-600/80 to-magenta-600/80 text-white border border-cyan-400/30 shadow-lg shadow-cyan-900/30' 
                     : message.role === 'system'
-                    ? 'bg-red-950/50 border border-red-800 text-red-200'
+                    ? 'bg-red-950/50 border border-red-800/50 text-red-200 shadow-lg shadow-red-900/30'
                     : message.role === 'command'
-                    ? 'bg-blue-950/50 border border-blue-800 text-blue-200'
-                    : 'bg-gray-900/80 border border-gray-700'
+                    ? 'bg-cyan-950/50 border border-cyan-800/50 text-cyan-200 shadow-lg shadow-cyan-900/30'
+                    : 'bg-gray-900/80 border border-cyan-700/30 shadow-lg shadow-cyan-900/20'
                 }`}>
                   {message.toolsUsed && message.toolsUsed.length > 0 && (
                     <div className="flex items-center space-x-2 mb-2 text-xs opacity-70">
@@ -421,7 +437,7 @@ Try:
         </div>
 
         {/* Input */}
-        <div className="border-t border-gray-800 p-4 bg-gray-900/50">
+        <div className="border-t border-cyan-900/30 p-4 bg-gray-900/50 backdrop-blur-md">
           <div className="flex space-x-2">
             <div className="flex-1 relative">
               <input
@@ -431,7 +447,7 @@ Try:
                 onKeyDown={handleKeyDown}
                 placeholder="Ask anything, or use ! for bash commands..."
                 disabled={isProcessing}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 pr-12 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                className="w-full bg-gray-800/80 backdrop-blur-sm border border-cyan-700/50 rounded-lg px-4 py-2.5 pr-12 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 disabled:opacity-50 shadow-lg shadow-cyan-900/20"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1 text-xs text-gray-500">
                 <FiCommand className="text-xs" />
@@ -441,7 +457,7 @@ Try:
             <button
               onClick={handleSubmit}
               disabled={isProcessing || !input.trim()}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2.5 flex items-center"
+              className="bg-gradient-to-r from-cyan-600 to-magenta-600 hover:from-cyan-700 hover:to-magenta-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg px-4 py-2.5 flex items-center shadow-lg shadow-cyan-900/30 border border-cyan-400/30"
             >
               {isProcessing ? (
                 <FiActivity className="animate-spin" />
@@ -457,16 +473,16 @@ Try:
               Natural language for everything else
             </div>
             <div className={`flex items-center space-x-1 ${
-              connectionStatus === 'connected' ? 'text-green-400' : 
+              connectionStatus === 'connected' ? 'text-cyan-400' : 
               connectionStatus === 'error' ? 'text-red-400' : 'text-yellow-400'
             }`}>
               <div className={`w-1.5 h-1.5 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-green-400' : 
-                connectionStatus === 'error' ? 'bg-red-400' : 'bg-yellow-400'
+                connectionStatus === 'connected' ? 'bg-cyan-400 shadow-lg shadow-cyan-400/50' : 
+                connectionStatus === 'error' ? 'bg-red-400 shadow-lg shadow-red-400/50' : 'bg-yellow-400 shadow-lg shadow-yellow-400/50'
               }`} />
-              <span>
+              <span className="text-xs">
                 {connectionStatus === 'connected' ? 'Connected' : 
-                 connectionStatus === 'error' ? 'Error' : 'Connecting...'}
+                 connectionStatus === 'error' ? (connectionError || 'Error') : 'Connecting...'}
               </span>
             </div>
           </div>

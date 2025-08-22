@@ -1,0 +1,86 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kre8-gradient-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ffff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ff00ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00ffff;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="kre8-gradient-2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff00ff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00ddff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff00ff;stop-opacity:1" />
+    </linearGradient>
+    <filter id="kre8-glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="kre8-intense-glow">
+      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Outer hexagon frame -->
+  <polygon points="200,50 335,125 335,275 200,350 65,275 65,125" 
+           stroke="url(#kre8-gradient-1)" stroke-width="2" fill="none" 
+           opacity="0.8" filter="url(#kre8-glow)"/>
+  
+  <!-- Inner hexagon -->
+  <polygon points="200,80 305,140 305,260 200,320 95,260 95,140" 
+           stroke="url(#kre8-gradient-2)" stroke-width="1.5" fill="none" 
+           opacity="0.6"/>
+  
+  <!-- Sacred geometry pattern -->
+  <g opacity="0.4">
+    <line x1="200" y1="50" x2="200" y2="350" stroke="url(#kre8-gradient-1)" stroke-width="1"/>
+    <line x1="65" y1="125" x2="335" y2="275" stroke="url(#kre8-gradient-1)" stroke-width="1"/>
+    <line x1="335" y1="125" x2="65" y2="275" stroke="url(#kre8-gradient-1)" stroke-width="1"/>
+  </g>
+  
+  <!-- KRE8 text -->
+  <text x="200" y="180" text-anchor="middle" 
+        font-family="Arial Black, sans-serif" font-size="48" font-weight="900"
+        fill="url(#kre8-gradient-1)" filter="url(#kre8-intense-glow)">
+    KRE8
+  </text>
+  
+  <!-- STYLER text -->
+  <text x="200" y="230" text-anchor="middle" 
+        font-family="Arial, sans-serif" font-size="32" font-weight="300"
+        letter-spacing="8" fill="url(#kre8-gradient-2)" filter="url(#kre8-glow)">
+    STYLER
+  </text>
+  
+  <!-- Corner nodes -->
+  <g filter="url(#kre8-intense-glow)">
+    <circle cx="200" cy="50" r="5" fill="#00ffff"/>
+    <circle cx="335" cy="125" r="5" fill="#ff00ff"/>
+    <circle cx="335" cy="275" r="5" fill="#00ffff"/>
+    <circle cx="200" cy="350" r="5" fill="#ff00ff"/>
+    <circle cx="65" cy="275" r="5" fill="#00ffff"/>
+    <circle cx="65" cy="125" r="5" fill="#ff00ff"/>
+  </g>
+  
+  <!-- Central ornament -->
+  <g transform="translate(200, 200)">
+    <polygon points="0,-20 17,-10 17,10 0,20 -17,10 -17,-10" 
+             stroke="url(#kre8-gradient-1)" stroke-width="1" fill="none" 
+             opacity="0.5" transform="scale(0.8) translate(0, -80)"/>
+    <polygon points="0,-20 17,-10 17,10 0,20 -17,10 -17,-10" 
+             stroke="url(#kre8-gradient-2)" stroke-width="1" fill="none" 
+             opacity="0.5" transform="scale(0.8) translate(0, 80)"/>
+  </g>
+  
+  <!-- Energy rings -->
+  <circle cx="200" cy="200" r="180" stroke="url(#kre8-gradient-1)" 
+          stroke-width="0.5" fill="none" opacity="0.3" stroke-dasharray="5,10"/>
+  <circle cx="200" cy="200" r="190" stroke="url(#kre8-gradient-2)" 
+          stroke-width="0.5" fill="none" opacity="0.2" stroke-dasharray="10,5"/>
+</svg>
