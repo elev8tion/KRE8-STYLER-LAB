@@ -801,24 +801,40 @@ export default function KRE8ComponentLibrary({ onSelectTemplate, isOpen, embedde
     return (
       <div className="w-full h-full overflow-y-auto">
         {/* Category Filter - Circular Button Style */}
-        <div className="flex gap-4 mb-6 pt-8 px-4 justify-center">
+        <div className="flex gap-4 mb-8 pt-8 px-4 justify-center" style={{ marginTop: '20px' }}>
           {/* All button */}
           <motion.button
             onClick={() => setSelectedCategory(null)}
             className="relative"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.98 }}
           >
             <div className={`
-              w-16 h-16 rounded-full
-              bg-gradient-to-br from-cyan-500/20 to-purple-500/20
-              border-2 ${!selectedCategory ? 'border-cyan-400' : 'border-cyan-500/40'}
-              flex items-center justify-center
-              text-cyan-400 font-bold text-xs
+              w-14 h-[70px] rounded-[20px]
               transition-all duration-300
-              ${!selectedCategory ? 'shadow-[0_0_30px_rgba(0,255,204,0.5)]' : 'hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]'}
+              ${!selectedCategory 
+                ? 'bg-gradient-to-br from-cyan-500/30 to-cyan-500/20' 
+                : 'bg-black/60'}
+              backdrop-blur-sm
+              border-2
+              flex flex-col items-center justify-center
+              font-bold text-[10px]
+              relative overflow-hidden
+              ${!selectedCategory ? 'border-cyan-400' : 'border-gray-600/40'}
+              ${!selectedCategory 
+                ? 'shadow-[0_0_30px_rgba(0,255,204,0.4),inset_0_0_20px_rgba(0,255,204,0.2)]' 
+                : ''}
             `}>
-              ALL
+              <span className="relative z-10 -translate-y-2" style={{
+                color: !selectedCategory ? '#00ffcc' : '#666',
+                filter: !selectedCategory ? 'drop-shadow(0 0 3px #00ffcc)' : 'none'
+              }}>ALL</span>
+              <span className="text-[9px] mt-1 opacity-80" style={{
+                color: !selectedCategory ? '#00ffcc' : '#666',
+                textShadow: !selectedCategory ? '0 0 10px rgba(0,255,204,0.5)' : 'none'
+              }}>FILTER</span>
+              {!selectedCategory && (
+                <div className="absolute inset-0 bg-gradient-to-t from-cyan-400/10 to-transparent animate-pulse" />
+              )}
             </div>
           </motion.button>
 
@@ -828,31 +844,47 @@ export default function KRE8ComponentLibrary({ onSelectTemplate, isOpen, embedde
               key={category}
               onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
               className="relative"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.98 }}
             >
               <div 
                 className={`
-                  w-16 h-16 rounded-full
-                  bg-black/60 backdrop-blur-sm
-                  border-2 transition-all duration-300
-                  flex items-center justify-center
+                  w-14 h-[70px] rounded-[20px]
+                  transition-all duration-300
+                  backdrop-blur-sm
+                  border-2
+                  flex flex-col items-center justify-center
                   font-bold text-[10px]
-                  ${selectedCategory === category 
-                    ? 'shadow-[0_0_30px_rgba(0,255,204,0.5)]' 
-                    : 'hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]'}
+                  relative overflow-hidden
                 `}
                 style={{
+                  background: selectedCategory === category 
+                    ? `linear-gradient(135deg, ${categoryColors[category]}33, ${categoryColors[category]}22)`
+                    : 'rgba(0,0,0,0.6)',
                   borderColor: selectedCategory === category 
                     ? categoryColors[category] 
-                    : `${categoryColors[category]}66`,
-                  color: categoryColors[category],
-                  textShadow: selectedCategory === category 
-                    ? `0 0 10px ${categoryColors[category]}` 
-                    : 'none'
+                    : 'rgba(100,100,100,0.4)',
+                  boxShadow: selectedCategory === category 
+                    ? `0 0 30px ${categoryColors[category]}44, inset 0 0 20px ${categoryColors[category]}22`
+                    : ''
                 }}
               >
-                {category.slice(0, 3).toUpperCase()}
+                <span className="relative z-10 -translate-y-2" style={{
+                  color: selectedCategory === category ? categoryColors[category] : '#666',
+                  filter: selectedCategory === category ? `drop-shadow(0 0 3px ${categoryColors[category]})` : 'none'
+                }}>
+                  {category.slice(0, 3).toUpperCase()}
+                </span>
+                <span className="text-[9px] mt-1 opacity-80" style={{
+                  color: selectedCategory === category ? categoryColors[category] : '#666',
+                  textShadow: selectedCategory === category ? `0 0 10px ${categoryColors[category]}88` : 'none'
+                }}>
+                  {category.toUpperCase()}
+                </span>
+                {selectedCategory === category && (
+                  <div className="absolute inset-0 animate-pulse" style={{
+                    background: `linear-gradient(135deg, ${categoryColors[category]}11, transparent)`
+                  }} />
+                )}
               </div>
             </motion.button>
           ))}
@@ -886,7 +918,6 @@ export default function KRE8ComponentLibrary({ onSelectTemplate, isOpen, embedde
                   <ParticleCard
                     text={template.name}
                     color={categoryColors[template.category] || '#00ffcc'}
-                    icon={template.icon}
                     onClick={() => onSelectTemplate(template)}
                   />
                 </motion.div>

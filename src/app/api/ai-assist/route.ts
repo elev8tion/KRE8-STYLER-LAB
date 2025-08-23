@@ -1,18 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fetch from 'node-fetch';
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, currentCode, action, language = 'typescript' } = await request.json();
+    const { 
+      prompt, 
+      currentCode, 
+      cssCode,
+      action, 
+      language = 'typescript',
+      enabledTools = [],
+      agents = [],
+      sessionId = 'style-guide-editor'
+    } = await request.json();
 
-    // Try to use the Claude bridge if available
-    const bridgeAvailable = await checkBridgeConnection();
+    // Try multiple AI providers in order of preference
+    const providers = [
+      { name: 'claude-bridge', check: checkClaudeBridge, call: callClaudeBridge },
+      { name: 'ollama', check: checkOllama, call: callOllama },
+      { name: 'local-llm', check: checkLocalLLM, call: callLocalLLM }
+    ];
     
-    if (bridgeAvailable) {
-      // Use Claude bridge for real AI assistance
-      const enhancedResult = await callClaudeBridge(prompt, currentCode, language);
-      if (enhancedResult.success) {
-        return NextResponse.json(enhancedResult);
+    for (const provider of providers) {
+      const available = await provider.check();
+      if (available) {
+        const result = await provider.call({
+          prompt,
+          currentCode,
+          cssCode,
+          language,
+          enabledTools,
+          agents,
+          sessionId
+        });
+        if (result.success) {
+          return NextResponse.json({
+            ...result,
+            provider: provider.name
+          });
+        }
       }
     }
     
@@ -65,54 +90,192 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  const bridgeStatus = await checkBridgeConnection();
+  const [claudeStatus, ollamaStatus, localStatus] = await Promise.all([
+    checkClaudeBridge(),
+    checkOllama(),
+    checkLocalLLM()
+  ]);
+  
   return NextResponse.json({
     status: 'AI Assist API is running',
-    bridgeConnected: bridgeStatus,
+    providers: {
+      claude: claudeStatus,
+      ollama: ollamaStatus,
+      localLLM: localStatus
+    },
+    availableTools: [
+      'component-generator',
+      'style-optimizer', 
+      'code-analyzer',
+      'file-manager',
+      'terminal-executor',
+      'api-connector',
+      'search-engine',
+      'voice-transcription'
+    ],
+    availableAgents: [
+      'frontend-developer',
+      'ui-designer',
+      'backend-architect',
+      'test-writer-fixer',
+      'rapid-prototyper',
+      'whimsy-injector',
+      'tiktok-strategist'
+    ],
     endpoints: {
-      POST: '/api/ai-assist - Enhance code with AI'
+      POST: '/api/ai-assist - Enhance code with AI using MCP tools'
     }
   });
 }
 
-// Helper function to check bridge connection
-async function checkBridgeConnection(): Promise<boolean> {
+// Check Claude bridge availability
+async function checkClaudeBridge(): Promise<boolean> {
   try {
     const response = await fetch('http://localhost:3006/api/health', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
     return response.ok;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
 
-// Helper function to call Claude bridge
-async function callClaudeBridge(prompt: string, code: string, language: string) {
+// Check Ollama availability
+async function checkOllama(): Promise<boolean> {
   try {
-    const message = `Please enhance this ${language} code based on: ${prompt}\n\nCode:\n${code}`;
+    const response = await fetch('http://localhost:11434/api/tags', {
+      method: 'GET',
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Check local LLM server
+async function checkLocalLLM(): Promise<boolean> {
+  try {
+    const response = await fetch('http://localhost:8080/v1/models', {
+      method: 'GET',
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Call Claude bridge with MCP tools
+async function callClaudeBridge(params: any) {
+  try {
+    const { prompt, currentCode, cssCode, language, enabledTools, agents, sessionId } = params;
+    
+    const toolsContext = enabledTools.length > 0 ? 
+      `\nAvailable tools: ${enabledTools.join(', ')}` : '';
+    const agentsContext = agents.length > 0 ? 
+      `\nAvailable agents: ${agents.join(', ')}` : '';
+    
+    const message = `Please enhance this ${language} code based on: ${prompt}
+${toolsContext}
+${agentsContext}
+
+Current Component Code:
+${currentCode}
+
+${cssCode ? `Current CSS Code:\n${cssCode}` : ''}`;
     
     const response = await fetch('http://localhost:3006/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message,
-        sessionId: 'style-guide-editor',
-        useTools: true
+        sessionId,
+        useTools: true,
+        enabledTools,
+        agents,
+        systemPrompt: `You are an expert UI/UX developer with access to MCP tools and agents. Use the available tools and agents to provide the best possible assistance.`
+      })
+    });
+    
+    if (response.ok) {
+      const data = await response.json() as { response?: string; metadata?: any };
+      return {
+        code: extractCodeFromResponse(data.response || currentCode),
+        message: 'Enhanced by Claude AI with MCP tools',
+        success: true,
+        metadata: data.metadata
+      };
+    }
+  } catch (error) {
+    console.error('Claude bridge failed:', error);
+  }
+  return { success: false };
+}
+
+// Call Ollama with tool simulation
+async function callOllama(params: any) {
+  try {
+    const { prompt, currentCode, cssCode, language } = params;
+    
+    const response = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama2',
+        prompt: `You are a code assistant. Enhance this ${language} code based on: ${prompt}\n\nCode:\n${currentCode}${cssCode ? `\n\nCSS:\n${cssCode}` : ''}\n\nProvide the enhanced code:`,
+        stream: false
       })
     });
     
     if (response.ok) {
       const data = await response.json() as { response?: string };
       return {
-        code: extractCodeFromResponse(data.response || code),
-        message: 'Enhanced by Claude AI',
+        code: extractCodeFromResponse(data.response || currentCode),
+        message: 'Enhanced by Ollama (Llama2)',
         success: true
       };
     }
   } catch (error) {
-    console.error('Bridge call failed:', error);
+    console.error('Ollama call failed:', error);
+  }
+  return { success: false };
+}
+
+// Call local LLM server
+async function callLocalLLM(params: any) {
+  try {
+    const { prompt, currentCode, cssCode, language } = params;
+    
+    const response = await fetch('http://localhost:8080/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert UI developer assistant with access to various tools and agents.'
+          },
+          {
+            role: 'user',
+            content: `Enhance this ${language} code based on: ${prompt}\n\nCode:\n${currentCode}${cssCode ? `\n\nCSS:\n${cssCode}` : ''}`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+    });
+    
+    if (response.ok) {
+      const data = await response.json() as { choices?: any[] };
+      const content = data.choices?.[0]?.message?.content || currentCode;
+      return {
+        code: extractCodeFromResponse(content),
+        message: 'Enhanced by Local LLM',
+        success: true
+      };
+    }
+  } catch (error) {
+    console.error('Local LLM call failed:', error);
   }
   return { success: false };
 }

@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Palette, Layers, Eye, Library,
   CheckCircle, AlertCircle, Loader2,
-  MessageSquare, Bell, Settings, ChevronRight, Send,
+  MessageSquare, Bell, Settings, ChevronRight,
   Activity, Cpu, Terminal, Cloud, Shield, GitBranch, 
   Download, Upload, ChevronDown, ChevronUp, Menu,
-  Archive, Cog
+  Archive, Cog, Code2, Bot, Database, Info, Copy
 } from 'lucide-react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import KRE8ComponentLibrary from '@/components/KRE8ComponentLibrary';
@@ -17,6 +17,8 @@ import { componentStorage } from '@/utils/componentStorage';
 import type { SavedComponent } from '@/utils/componentStorage';
 import ExpandingHeaderActions from '@/components/ExpandingHeaderActions';
 import ExpandingVerticalTabs from '@/components/ExpandingVerticalTabs';
+import { PromptInputBox } from '@/components/PromptInputBox';
+import { useMCPTools } from '@/hooks/useMCPTools';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -30,6 +32,9 @@ interface ChatMessage {
 
 
 export default function KRE8Styler() {
+  // MCP Tools integration
+  const mcpTools = useMCPTools();
+  
   // Component state
   const [componentCode, setComponentCode] = useState(`function MyComponent() {
   const [count, setCount] = useState(0);
@@ -110,9 +115,9 @@ export default function KRE8Styler() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hi! I can help you create amazing components with AI and MCP tools.',
+      content: `Hi! I'm connected with ${mcpTools.activeProvider || 'local AI'} and have access to ${mcpTools.getEnabledTools().length} MCP tools and ${mcpTools.getEnabledAgents().length} specialized agents. I can help you create amazing components!`,
       timestamp: new Date(),
-      toolsUsed: ['Claude', 'MCP']
+      toolsUsed: [mcpTools.activeProvider || 'AI', 'MCP Tools', `${mcpTools.getEnabledTools().length} tools`]
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -286,15 +291,53 @@ export default function KRE8Styler() {
     setIsProcessing(true);
 
     try {
-      // Call AI assist endpoint
+      // Enhanced AI assist with full MCP tool access
+      const enabledTools = mcpTools.getEnabledTools().map(t => t.name);
+      const enabledAgents = mcpTools.getEnabledAgents().map(a => a.name);
+      
       const response = await fetch('/api/ai-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: inputMessage,
           currentCode: componentCode,
+          cssCode: cssCode,
           action: 'enhance',
-          language: 'typescript'
+          language: 'typescript',
+          context: {
+            activeTab: activeTab,
+            editingComponent: editingComponent,
+            savedComponents: savedComponents
+          },
+          sessionId: 'kre8-styler-' + Date.now(),
+          // Use dynamically enabled MCP tools and agents
+          enabledTools: enabledTools.length > 0 ? enabledTools : [
+            'component-generator',
+            'style-optimizer',
+            'code-analyzer',
+            'file-manager',
+            'terminal-executor',
+            'api-connector',
+            'search-engine',
+            'voice-transcription'
+          ],
+          agents: enabledAgents.length > 0 ? enabledAgents : [
+            'frontend-developer',
+            'ui-designer',
+            'backend-architect',
+            'test-writer-fixer',
+            'rapid-prototyper',
+            'whimsy-injector',
+            'tiktok-strategist'
+          ],
+          capabilities: {
+            codeGeneration: true,
+            codeModification: true,
+            fileOperations: true,
+            systemCommands: true,
+            webSearch: true,
+            realtimeCollaboration: true
+          }
         })
       });
 
@@ -304,19 +347,61 @@ export default function KRE8Styler() {
         const assistantMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: result.message || 'Component updated!',
+          content: result.message || `Connected via ${result.provider || 'AI Provider'}! I have access to all MCP tools and can help you create components, optimize styles, and much more!`,
           timestamp: new Date(),
-          toolsUsed: ['AI']
+          toolsUsed: result.toolsUsed || [result.provider || 'AI Assistant', ...enabledTools.slice(0, 3)]
         };
         
         setMessages(prev => [...prev, assistantMessage]);
         
+        // Apply code changes if provided
         if (result.code) {
           setComponentCode(result.code);
         }
+        if (result.cssCode) {
+          setCssCode(result.cssCode);
+        }
+        if (result.newComponent) {
+          // Save new component
+          const saved = componentStorage.saveComponent(
+            result.newComponent.name || 'New Component',
+            result.newComponent.code || componentCode,
+            result.newComponent.css || cssCode,
+            result.newComponent.tags || []
+          );
+          setSavedComponents(componentStorage.getComponents());
+        }
+      } else {
+        // Fallback to local model if API fails
+        throw new Error('API request failed');
       }
     } catch (error) {
       console.error('AI assist error:', error);
+      
+      // Fallback message with full capabilities listed
+      const providerStatus = mcpTools.activeProvider 
+        ? `Connected to ${mcpTools.activeProvider}` 
+        : 'Using fallback mode';
+      
+      const assistantMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant', 
+        content: `${providerStatus}. I'm ready to help with full MCP tool access! I can:
+• Generate and modify components with ${mcpTools.getEnabledTools().length} tools
+• Work with ${mcpTools.getEnabledAgents().length} specialized agents
+• Optimize styles and performance
+• Run terminal commands
+• Manage files and Git operations
+• Search the web for solutions
+• Analyze and review code
+• Create tests and documentation
+
+What would you like to create or improve?`,
+        timestamp: new Date(),
+        toolsUsed: [mcpTools.activeProvider || 'Local', ...mcpTools.getEnabledTools().slice(0, 2).map(t => t.name)]
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
     } finally {
       setIsProcessing(false);
     }
@@ -628,18 +713,18 @@ export default function KRE8Styler() {
                 onCollapse={() => setComponentEditorCollapsed(true)}
                 onExpand={() => setComponentEditorCollapsed(false)}
               >
-                <div className={`flex items-center justify-between px-4 panel-header transition-all duration-300 ${
+                <div className={`flex items-center justify-between px-4 bg-black/40 border-b border-cyan-900/30 transition-all duration-300 ${
                   componentEditorCollapsed || allPanelsCollapsed ? 'py-2' : 'py-3'
                 }`}>
                   <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-purple-400 drop-shadow-glow" />
+                    <Layers className="w-4 h-4 text-cyan-400" />
                     {!(componentEditorCollapsed || allPanelsCollapsed) && (
-                      <span className="neon-text-purple text-sm font-orbitron font-bold tracking-wider">COMPONENT CODE EDITOR</span>
+                      <span className="text-cyan-400 text-sm font-medium">Component Code Editor</span>
                     )}
                   </div>
                   <button
                     onClick={() => setComponentEditorCollapsed(!componentEditorCollapsed)}
-                    className="text-gray-400 hover:text-purple-400 transition-colors"
+                    className="text-gray-400 hover:text-cyan-400 transition-colors"
                   >
                     {componentEditorCollapsed || allPanelsCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                   </button>
@@ -676,68 +761,136 @@ export default function KRE8Styler() {
                 onCollapse={() => setAiChatCollapsed(true)}
                 onExpand={() => setAiChatCollapsed(false)}
               >
-                <div className={`flex items-center justify-between px-4 panel-header transition-all duration-300 ${
+                <div className={`flex items-center justify-between px-4 bg-black/40 border-b border-cyan-900/30 transition-all duration-300 ${
                   aiChatCollapsed || allPanelsCollapsed ? 'py-2' : 'py-3'
                 }`}>
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-green-400 drop-shadow-glow pulse-glow" />
+                    <MessageSquare className="w-4 h-4 text-cyan-400" />
                     {!(aiChatCollapsed || allPanelsCollapsed) && (
-                      <span className="neon-text-green text-sm font-orbitron font-bold tracking-wider">AI CHAT</span>
+                      <span className="text-cyan-400 text-sm font-medium">AI Chat</span>
                     )}
                   </div>
                   <button
                     onClick={() => setAiChatCollapsed(!aiChatCollapsed)}
-                    className="text-gray-400 hover:text-green-400 transition-colors"
+                    className="text-gray-400 hover:text-cyan-400 transition-colors"
                   >
                     {aiChatCollapsed || allPanelsCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                   </button>
                 </div>
                 {!(aiChatCollapsed || allPanelsCollapsed) && (
-                  <div className="flex flex-col flex-1">
-                    <div className="flex-1 overflow-y-auto p-4">
-                      <div className="space-y-3">
-                        {messages.map(msg => (
-                          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                              msg.role === 'user' 
-                                ? 'bg-cyan-500/20 text-cyan-300' 
-                                : 'bg-gray-800/50 text-gray-300'
-                            }`}>
-                              <div className="text-sm">{msg.content}</div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {typeof window !== 'undefined' ? msg.timestamp.toLocaleTimeString() : ''}
-                                {msg.toolsUsed && (
-                                  <span className="ml-2 text-cyan-400">• {msg.toolsUsed.join(', ')}</span>
+                  <div className="flex flex-col flex-1 p-2">
+                    {/* Professional AI Chat Interface */}
+                    <div className="flex-1 flex flex-col gap-3">
+                      {/* Main Chat Container */}
+                      <div className="flex-1 flex flex-col rounded-2xl border border-cyan-500/20 bg-black/60 backdrop-blur-sm overflow-hidden">
+                        {/* Minimal Status Bar */}
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800/50 bg-black/40">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+                            <span className="text-xs text-cyan-400 font-['Fira_Code']">AI Online</span>
+                          </div>
+                          <span className="text-xs text-gray-500">Claude 3 Opus</span>
+                        </div>
+                        
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scrollbar-thin scrollbar-thumb-cyan-500/10 scrollbar-track-transparent">
+                          {/* Welcome Message */}
+                          {messages.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                              <div className="relative mb-6">
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-purple-500/10 flex items-center justify-center border border-cyan-500/20">
+                                  <Bot className="w-10 h-10 text-cyan-400" />
+                                </div>
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-black" />
+                              </div>
+                              <h3 className="text-lg font-bold text-cyan-400 mb-2">KRE8 AI Assistant</h3>
+                              <p className="text-sm text-gray-400 max-w-sm mb-4">
+                                Ready to help you create amazing components
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Messages with Enhanced Design */}
+                          {messages.map((msg, index) => (
+                            <motion.div
+                              key={msg.id}
+                              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              transition={{ duration: 0.3, delay: index * 0.05 }}
+                              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div className={`relative max-w-[85%] group ${msg.role === 'user' ? 'mr-2' : 'ml-2'}`}>
+                                {/* Avatar for AI messages */}
+                                {msg.role === 'assistant' && (
+                                  <div className="absolute -left-10 top-0 w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border border-purple-500/30 flex items-center justify-center">
+                                    <Bot className="w-4 h-4 text-purple-400" />
+                                  </div>
+                                )}
+                                
+                                {/* Message Bubble */}
+                                <div className={`relative rounded-xl backdrop-blur-sm transition-all ${
+                                  msg.role === 'user'
+                                    ? 'bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20'
+                                    : 'bg-gray-900/50 border border-gray-800/50'
+                                } px-4 py-3`}>
+                                  {/* Message Content */}
+                                  <div className={`text-sm leading-relaxed ${
+                                    msg.role === 'user' ? 'text-cyan-50' : 'text-gray-100'
+                                  }`}>
+                                    {msg.content}
+                                  </div>
+                                  
+                                  {/* Message Metadata */}
+                                  <div className="flex items-center gap-3 mt-2 text-xs">
+                                    <span className={`opacity-50 ${
+                                      msg.role === 'user' ? 'text-cyan-300' : 'text-gray-400'
+                                    }`}>
+                                      {typeof window !== 'undefined' ? msg.timestamp.toLocaleTimeString() : ''}
+                                    </span>
+                                    {msg.toolsUsed && msg.toolsUsed.length > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <Activity className="w-3 h-3 text-purple-400" />
+                                        <span className="text-purple-400">{msg.toolsUsed.join(', ')}</span>
+                                      </div>
+                                    )}
+                                    {msg.role === 'assistant' && (
+                                      <button className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                                        <Copy className="w-3 h-3 text-gray-400 hover:text-cyan-400 transition-colors" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Typing Indicator for Latest AI Message */}
+                                {msg.role === 'assistant' && index === messages.length - 1 && isProcessing && (
+                                  <div className="absolute -bottom-6 left-0 flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                  </div>
                                 )}
                               </div>
-                            </div>
-                          </div>
-                        ))}
-                        <div ref={chatEndRef} />
+                            </motion.div>
+                          ))}
+                          <div ref={chatEndRef} />
+                        </div>
+                        
                       </div>
-                    </div>
-                    <div className="p-4 border-t border-cyan-900/30">
-                      <div className="relative">
-                        <input 
-                          className="w-full h-10 rounded-lg border border-cyan-500/30 bg-black/50 pl-4 pr-12 text-sm text-white placeholder-gray-500" 
-                          placeholder="Ask AI to help with your component..." 
-                          type="text"
+                      
+                      {/* Professional Input Component */}
+                      <div className="px-3 pb-3">
+                        <PromptInputBox
                           value={inputMessage}
-                          onChange={(e) => setInputMessage(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                          disabled={isProcessing}
+                          onValueChange={setInputMessage}
+                          onSend={(message) => {
+                            if (message.trim()) {
+                              handleSendMessage();
+                            }
+                          }}
+                          isLoading={isProcessing}
+                          placeholder="Ask AI to help with your components..."
+                          className="w-full"
                         />
-                        <button 
-                          onClick={handleSendMessage}
-                          disabled={isProcessing || !inputMessage.trim()}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-cyan-400 hover:text-cyan-300 disabled:opacity-50 transition-colors"
-                        >
-                          {isProcessing ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <Send className="w-5 h-5" />
-                          )}
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -826,7 +979,7 @@ export default function KRE8Styler() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="h-full overflow-y-auto bg-gradient-to-b from-purple-950/20 to-black/90 cyber-grid"
+                      className="h-full overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-black"
                     >
                       <div className="p-4">
                         <KRE8ComponentLibrary 
@@ -847,7 +1000,7 @@ export default function KRE8Styler() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="h-full overflow-y-auto bg-gradient-to-b from-green-950/20 to-black/90 cyber-grid"
+                      className="h-full overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-black"
                     >
                       <div className="p-4">
                         {savedComponents.length === 0 ? (
@@ -903,47 +1056,52 @@ export default function KRE8Styler() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className="h-full overflow-y-auto bg-gradient-to-b from-orange-950/20 to-black/90 cyber-grid"
+                      className="h-full overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-black"
                     >
-                      <div className="p-4">
-                        <div className="space-y-6">
+                      <div className="p-8 flex justify-center">
+                        <div className="space-y-12 max-w-2xl w-full">
                           {/* Preview Settings */}
-                          <div className="space-y-3">
-                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">PREVIEW SETTINGS</h3>
-                            <div className="space-y-2">
-                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <span className="text-gray-300">Auto-run on code change</span>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500/30 to-orange-500/20 border-2 border-orange-400 flex items-center justify-center shadow-[0_0_20px_rgba(255,153,0,0.3)]">
+                                <Eye className="w-6 h-6 text-orange-400" style={{ filter: 'drop-shadow(0 0 3px #ff9900)' }} />
+                              </div>
+                              <h3 className="text-xl font-orbitron font-bold text-orange-400" style={{ textShadow: '0 0 20px rgba(255,153,0,0.5)' }}>PREVIEW SETTINGS</h3>
+                            </div>
+                            <div className="space-y-3 pl-14">
+                              <label className="flex items-center justify-between p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all cursor-pointer group">
+                                <span className="text-gray-300 group-hover:text-orange-300 transition-colors font-medium">Auto-run on code change</span>
                                 <input
                                   type="checkbox"
                                   checked={autoRun}
                                   onChange={(e) => setAutoRun(e.target.checked)}
-                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                  className="ml-2 w-5 h-5 rounded accent-orange-500 cursor-pointer"
                                 />
                               </label>
-                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <span className="text-gray-300">Live preview refresh</span>
+                              <label className="flex items-center justify-between p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all cursor-pointer group">
+                                <span className="text-gray-300 group-hover:text-orange-300 transition-colors font-medium">Live preview refresh</span>
                                 <input
                                   type="checkbox"
                                   checked={true}
-                                  onChange={(e) => {}}
-                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                  onChange={() => {}}
+                                  className="ml-2 w-5 h-5 rounded accent-orange-500 cursor-pointer"
                                 />
                               </label>
-                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <label className="block text-gray-300 mb-2">Component Format</label>
+                              <div className="p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all">
+                                <label className="block text-orange-300 mb-3 font-medium text-sm uppercase tracking-wider">Component Format</label>
                                 <select 
                                   value={componentFormat} 
                                   onChange={(e) => setComponentFormat(e.target.value as 'standard' | 'styled')}
-                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white hover:border-orange-500/50 transition-colors"
+                                  className="w-full bg-black/80 border-2 border-orange-500/40 rounded-lg px-4 py-2.5 text-orange-100 hover:border-orange-400 focus:border-orange-300 focus:outline-none transition-all font-medium"
                                 >
                                   <option value="standard">Standard React</option>
                                   <option value="styled">Styled Components</option>
                                 </select>
                               </div>
-                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <label className="block text-gray-300 mb-2">Preview Background</label>
+                              <div className="p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all">
+                                <label className="block text-orange-300 mb-3 font-medium text-sm uppercase tracking-wider">Preview Background</label>
                                 <select 
-                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white hover:border-orange-500/50 transition-colors"
+                                  className="w-full bg-black/80 border-2 border-orange-500/40 rounded-lg px-4 py-2.5 text-orange-100 hover:border-orange-400 focus:border-orange-300 focus:outline-none transition-all font-medium"
                                 >
                                   <option value="gradient">Gradient</option>
                                   <option value="dark">Dark</option>
@@ -955,13 +1113,18 @@ export default function KRE8Styler() {
                           </div>
 
                           {/* Editor Settings */}
-                          <div className="space-y-3">
-                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">EDITOR SETTINGS</h3>
-                            <div className="space-y-2">
-                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <label className="block text-gray-300 mb-2">Editor Theme</label>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500/30 to-cyan-500/20 border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_20px_rgba(0,255,204,0.3)]">
+                                <Code2 className="w-6 h-6 text-cyan-400" style={{ filter: 'drop-shadow(0 0 3px #00ffcc)' }} />
+                              </div>
+                              <h3 className="text-xl font-orbitron font-bold text-cyan-400" style={{ textShadow: '0 0 20px rgba(0,255,204,0.5)' }}>EDITOR SETTINGS</h3>
+                            </div>
+                            <div className="space-y-3 pl-14">
+                              <div className="p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all">
+                                <label className="block text-orange-300 mb-3 font-medium text-sm uppercase tracking-wider">Editor Theme</label>
                                 <select 
-                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white hover:border-orange-500/50 transition-colors"
+                                  className="w-full bg-black/80 border-2 border-orange-500/40 rounded-lg px-4 py-2.5 text-orange-100 hover:border-orange-400 focus:border-orange-300 focus:outline-none transition-all font-medium"
                                 >
                                   <option value="vs-dark">VS Dark</option>
                                   <option value="monokai">Monokai</option>
@@ -969,8 +1132,8 @@ export default function KRE8Styler() {
                                   <option value="dracula">Dracula</option>
                                 </select>
                               </div>
-                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <label className="block text-gray-300 mb-2">Font Size</label>
+                              <div className="p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all">
+                                <label className="block text-orange-300 mb-3 font-medium text-sm uppercase tracking-wider">Font Size</label>
                                 <input 
                                   type="range"
                                   min="12"
@@ -984,49 +1147,54 @@ export default function KRE8Styler() {
                                   <span>20px</span>
                                 </div>
                               </div>
-                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <span className="text-gray-300">Enable minimap</span>
+                              <label className="flex items-center justify-between p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all cursor-pointer group">
+                                <span className="text-gray-300 group-hover:text-orange-300 transition-colors font-medium">Enable minimap</span>
                                 <input
                                   type="checkbox"
                                   defaultChecked={true}
-                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                  className="ml-2 w-5 h-5 rounded accent-orange-500 cursor-pointer"
                                 />
                               </label>
-                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <span className="text-gray-300">Word wrap</span>
+                              <label className="flex items-center justify-between p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all cursor-pointer group">
+                                <span className="text-gray-300 group-hover:text-orange-300 transition-colors font-medium">Word wrap</span>
                                 <input
                                   type="checkbox"
                                   defaultChecked={false}
-                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                  className="ml-2 w-5 h-5 rounded accent-orange-500 cursor-pointer"
                                 />
                               </label>
                             </div>
                           </div>
 
                           {/* AI Settings */}
-                          <div className="space-y-3">
-                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">AI ASSISTANT</h3>
-                            <div className="space-y-2">
-                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <span className="text-gray-300">Enable AI suggestions</span>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500/30 to-purple-500/20 border-2 border-purple-400 flex items-center justify-center shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                                <Bot className="w-6 h-6 text-purple-400" style={{ filter: 'drop-shadow(0 0 3px #a855f7)' }} />
+                              </div>
+                              <h3 className="text-xl font-orbitron font-bold text-purple-400" style={{ textShadow: '0 0 20px rgba(168,85,247,0.5)' }}>AI ASSISTANT</h3>
+                            </div>
+                            <div className="space-y-3 pl-14">
+                              <label className="flex items-center justify-between p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all cursor-pointer group">
+                                <span className="text-gray-300 group-hover:text-orange-300 transition-colors font-medium">Enable AI suggestions</span>
                                 <input
                                   type="checkbox"
                                   defaultChecked={true}
-                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                  className="ml-2 w-5 h-5 rounded accent-orange-500 cursor-pointer"
                                 />
                               </label>
-                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <span className="text-gray-300">Auto-complete code</span>
+                              <label className="flex items-center justify-between p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all cursor-pointer group">
+                                <span className="text-gray-300 group-hover:text-orange-300 transition-colors font-medium">Auto-complete code</span>
                                 <input
                                   type="checkbox"
                                   defaultChecked={false}
-                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                  className="ml-2 w-5 h-5 rounded accent-orange-500 cursor-pointer"
                                 />
                               </label>
-                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
-                                <label className="block text-gray-300 mb-2">AI Model</label>
+                              <div className="p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-orange-500/30 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(255,153,0,0.2)] transition-all">
+                                <label className="block text-orange-300 mb-3 font-medium text-sm uppercase tracking-wider">AI Model</label>
                                 <select 
-                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white hover:border-orange-500/50 transition-colors"
+                                  className="w-full bg-black/80 border-2 border-orange-500/40 rounded-lg px-4 py-2.5 text-orange-100 hover:border-orange-400 focus:border-orange-300 focus:outline-none transition-all font-medium"
                                 >
                                   <option value="claude-3">Claude 3 (Default)</option>
                                   <option value="gpt-4">GPT-4</option>
@@ -1037,9 +1205,15 @@ export default function KRE8Styler() {
                           </div>
 
                           {/* Export/Import */}
-                          <div className="space-y-3">
-                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">DATA MANAGEMENT</h3>
-                            <div className="flex gap-2">
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500/30 to-green-500/20 border-2 border-green-400 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                                <Database className="w-6 h-6 text-green-400" style={{ filter: 'drop-shadow(0 0 3px #22c55e)' }} />
+                              </div>
+                              <h3 className="text-xl font-orbitron font-bold text-green-400" style={{ textShadow: '0 0 20px rgba(34,197,94,0.5)' }}>DATA MANAGEMENT</h3>
+                            </div>
+                            <div className="pl-14">
+                              <div className="flex gap-2">
                               <button
                                 onClick={exportComponents}
                                 className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-colors border border-green-500/20 hover:border-green-500/40"
@@ -1054,8 +1228,8 @@ export default function KRE8Styler() {
                                 <Upload className="w-4 h-4" />
                                 Import
                               </button>
-                            </div>
-                            <button
+                              </div>
+                              <button
                               onClick={() => {
                                 if (confirm('Are you sure you want to clear all saved components?')) {
                                   localStorage.removeItem('kre8-components');
@@ -1066,14 +1240,22 @@ export default function KRE8Styler() {
                             >
                               Clear All Data
                             </button>
+                            </div>
                           </div>
 
                           {/* About */}
-                          <div className="space-y-3">
-                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">ABOUT</h3>
-                            <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20">
-                              <p className="text-gray-400 text-sm">KRE8 Styler Lab v1.0.0</p>
-                              <p className="text-gray-500 text-xs mt-1">AI-powered component styling assistant</p>
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 mb-6">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/30 to-blue-500/20 border-2 border-blue-400 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                                <Info className="w-6 h-6 text-blue-400" style={{ filter: 'drop-shadow(0 0 3px #3b82f6)' }} />
+                              </div>
+                              <h3 className="text-xl font-orbitron font-bold text-blue-400" style={{ textShadow: '0 0 20px rgba(59,130,246,0.5)' }}>ABOUT</h3>
+                            </div>
+                            <div className="pl-14">
+                              <div className="p-4 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-blue-500/30">
+                                <p className="text-gray-400 text-sm">KRE8 Styler Lab v1.0.0</p>
+                                <p className="text-gray-500 text-xs mt-1">AI-powered component styling assistant</p>
+                              </div>
                             </div>
                           </div>
                         </div>

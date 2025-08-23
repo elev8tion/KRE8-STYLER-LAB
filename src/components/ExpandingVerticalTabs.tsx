@@ -57,11 +57,11 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px 8px;
+  padding: 16px 12px;
   background: rgba(0, 0, 0, 0.4);
   border-right: 1px solid rgba(0, 255, 204, 0.2);
   align-items: center;
-  width: 64px;
+  width: 90px;
   transition: all 0.3s ease;
 `;
 
@@ -69,14 +69,14 @@ const StyledTabButton = styled.div<{ $color: string; $active: boolean }>`
   position: relative;
   
   .button {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
+    width: ${props => props.$active ? '70px' : '42px'};
+    height: ${props => props.$active ? '70px' : '42px'};
+    border-radius: ${props => props.$active ? '20px' : '50%'};
     background: ${props => props.$active 
-      ? `linear-gradient(135deg, ${props.$color}, ${props.$color}88)`
+      ? `linear-gradient(135deg, ${props.$color}33, ${props.$color}22)`
       : `linear-gradient(135deg, ${props.$color}22, ${props.$color}11)`
     };
-    border: 1px solid ${props => props.$color}44;
+    border: 1px solid ${props => props.$active ? props.$color : `${props.$color}44`};
     font-weight: 600;
     display: flex;
     flex-direction: column;
@@ -104,14 +104,16 @@ const StyledTabButton = styled.div<{ $color: string; $active: boolean }>`
     color: ${props => props.$color};
     filter: drop-shadow(0 0 3px ${props => props.$color});
     position: absolute;
+    transform: ${props => props.$active ? 'translateY(-12px)' : 'translateY(0)'};
+    scale: ${props => props.$active ? '0.9' : '1'};
   }
 
   .buttonText {
     position: absolute;
     color: ${props => props.$color};
     font-weight: 500;
-    opacity: 0;
-    transform: translateY(20px);
+    opacity: ${props => props.$active ? '1' : '0'};
+    transform: ${props => props.$active ? 'translateY(10px)' : 'translateY(20px)'};
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
     text-shadow: 0 0 10px ${props => props.$color}88;
@@ -120,10 +122,12 @@ const StyledTabButton = styled.div<{ $color: string; $active: boolean }>`
   }
 
   .button:hover {
-    height: 70px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, ${props => props.$color}33, ${props => props.$color}22);
-    border-color: ${props => props.$color};
+    ${props => !props.$active && `
+      height: 70px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, ${props.$color}33, ${props.$color}22);
+      border-color: ${props.$color};
+    `}
     box-shadow: 
       0 0 30px ${props => props.$color}44,
       inset 0 0 20px ${props => props.$color}22,
@@ -131,13 +135,17 @@ const StyledTabButton = styled.div<{ $color: string; $active: boolean }>`
   }
 
   .button:hover .svgIcon {
-    transform: translateY(-12px);
-    scale: 0.9;
+    ${props => !props.$active && `
+      transform: translateY(-12px);
+      scale: 0.9;
+    `}
   }
 
   .button:hover .buttonText {
-    opacity: 1;
-    transform: translateY(10px);
+    ${props => !props.$active && `
+      opacity: 1;
+      transform: translateY(10px);
+    `}
   }
 
   .button:active {

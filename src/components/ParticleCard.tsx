@@ -6,14 +6,12 @@ import styled from 'styled-components';
 interface ParticleCardProps {
   text: string;
   color?: string;
-  icon?: React.ReactNode;
   onClick?: () => void;
 }
 
 const ParticleCard: React.FC<ParticleCardProps> = ({ 
   text, 
   color = '#00ffcc',
-  icon,
   onClick 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -168,14 +166,6 @@ const ParticleCard: React.FC<ParticleCardProps> = ({
           width={180}
           height={100}
         />
-        {icon && (
-          <div className="icon-container">
-            {icon}
-          </div>
-        )}
-        <div className="category-badge">
-          {text}
-        </div>
       </div>
     </StyledWrapper>
   );
@@ -227,36 +217,6 @@ const StyledWrapper = styled.div<{ $color: string }>`
     pointer-events: none;
   }
 
-  .icon-container {
-    position: absolute;
-    top: 20px;
-    display: grid;
-    place-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, 
-      ${props => props.$color}33, 
-      ${props => props.$color}66);
-    border: 2px solid ${props => props.$color};
-    color: white;
-    z-index: 10;
-    transition: all 0.3s ease;
-  }
-
-  .category-badge {
-    position: absolute;
-    bottom: 20px;
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: ${props => props.$color}88;
-    text-transform: uppercase;
-    font-weight: 600;
-    text-shadow: 0 0 10px ${props => props.$color}44;
-    font-family: 'Fira Code', monospace;
-    transition: all 0.3s ease;
-    opacity: 0.6;
-  }
 
   .card:hover {
     transform: scale(1.05);
@@ -266,15 +226,6 @@ const StyledWrapper = styled.div<{ $color: string }>`
       0 0 60px ${props => props.$color}33;
   }
 
-  .card:hover .icon-container {
-    transform: scale(1.2);
-    box-shadow: 0 0 20px ${props => props.$color};
-  }
-
-  .card:hover .category-badge {
-    opacity: 0.3;
-    transform: translateY(5px);
-  }
 `;
 
 export default ParticleCard;

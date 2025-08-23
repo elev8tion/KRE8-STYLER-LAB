@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start -p 3009",
     "bridge": "node server/claude-bridge.js",
-    "mcp-bridge": "node server/claude-mcp-bridge.js"
+    "mcp-bridge": "node server/claude-mcp-bridge.js",
+    "mcp-gateway": "node server/mcp-gateway.js",
+    "ollama-adapter": "node server/ollama-mcp-adapter.js",
+    "create-styler": "node server/create-styler-mcp.js",
+    "start-create-styler": "./start-create-styler.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.60.0",
