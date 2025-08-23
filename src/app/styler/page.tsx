@@ -4,19 +4,19 @@ import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Palette, Layers, Play, Save, Copy, Eye, Library, Wand2, Zap, ZapOff, 
-  CheckCircle, AlertCircle, Loader2, FolderOpen, Sparkles,
+  Palette, Layers, Eye, Library,
+  CheckCircle, AlertCircle, Loader2,
   MessageSquare, Bell, Settings, ChevronRight, Send,
   Activity, Cpu, Terminal, Cloud, Shield, GitBranch, 
-  Download, Upload, ChevronDown, ChevronUp, Menu, Minimize2, Maximize2,
+  Download, Upload, ChevronDown, ChevronUp, Menu,
   Archive, Cog
 } from 'lucide-react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import Link from 'next/link';
-import Image from 'next/image';
 import KRE8ComponentLibrary from '@/components/KRE8ComponentLibrary';
 import { componentStorage } from '@/utils/componentStorage';
 import type { SavedComponent } from '@/utils/componentStorage';
+import ExpandingHeaderActions from '@/components/ExpandingHeaderActions';
+import ExpandingVerticalTabs from '@/components/ExpandingVerticalTabs';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -162,10 +162,6 @@ export default function KRE8Styler() {
     }
   };
 
-  const updatePreview = () => {
-    setPreviewKey(prev => prev + 1);
-  };
-
   const copyToClipboard = () => {
     const fullCode = `// Component\n${componentCode}\n\n/* CSS */\n${cssCode}`;
     navigator.clipboard.writeText(fullCode);
@@ -261,6 +257,19 @@ export default function KRE8Styler() {
     };
     input.click();
   };
+  
+  const convertComponent = () => {
+    setComponentFormat(componentFormat === 'styled' ? 'standard' : 'styled');
+    // Add conversion logic here if needed
+  };
+  
+  const openGallery = () => {
+    window.location.href = '/gallery';
+  };
+  
+  const openEditor = () => {
+    window.location.href = '/style-guide';
+  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isProcessing) return;
@@ -315,7 +324,7 @@ export default function KRE8Styler() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-950 to-black cyber-grid">
-      <div className="h-screen flex flex-col scan-lines">
+      <div className="h-screen flex flex-col">
         {/* Header with KRE8 STYLER Logo */}
         <motion.header 
           initial={{ y: -50, opacity: 0 }}
@@ -324,30 +333,25 @@ export default function KRE8Styler() {
         >
           <div className="flex items-center justify-between px-6 py-3">
             <div className="flex items-center gap-6">
-              {/* KRE8 STYLER Logo - Fully visible in header */}
-              <div className="relative pulse-glow" style={{ width: '96px', height: '60px' }}>
-                <Image
-                  src="/kre8-logo.svg"
-                  alt="KRE8 STYLER"
-                  width={96}
-                  height={96}
-                  style={{
-                    position: 'absolute',
-                    top: '0px',
-                    left: '-14px',
-                    filter: 'drop-shadow(0 0 15px rgba(0, 221, 255, 0.8)) drop-shadow(0 0 30px rgba(0, 221, 255, 0.4))',
-                  }}
-                />
-              </div>
-              
-              <div className="font-orbitron text-2xl font-black neon-text tracking-wider">
-                KRE8 <span className="neon-text-purple">STYLER</span>
-              </div>
+              {/* Logo without glow container */}
+              <img
+                src="/kre8-logo.svg"
+                alt="KRE8"
+                width={90}
+                height={90}
+                style={{
+                  padding: '12px',
+                  marginTop: '-10px',
+                  marginLeft: '-14px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  borderRadius: '8px'
+                }}
+              />
               
               {/* Format Indicator */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 font-fira-code">FORMAT:</span>
-                <span className={`px-3 py-1 text-xs font-fira-code tech-corners animated-border ${
+                <span className={`px-3 py-1 text-xs font-fira-code tech-corners ${
                   componentFormat === 'styled' 
                     ? 'glass-panel text-cyan-400 neon-text' 
                     : 'glass-panel-purple text-purple-400 neon-text-purple'
@@ -380,138 +384,25 @@ export default function KRE8Styler() {
             </div>
             
             {/* Action Buttons */}
-            <div className="flex gap-2">
-              {/* Master Collapse Toggle */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={toggleAllPanels}
-                className={`cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 font-fira-code text-xs font-medium transition-all duration-300 ${
-                  allPanelsCollapsed 
-                    ? 'border-orange-400 text-orange-300 neon-text-orange bg-orange-500/10' 
-                    : 'border-orange-500/50 text-orange-400 hover:neon-text-orange'
-                }`}
-                title={allPanelsCollapsed ? 'Expand All Panels' : 'Collapse All Panels'}
-              >
-                {allPanelsCollapsed ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-                {allPanelsCollapsed ? 'EXPAND ALL' : 'COLLAPSE ALL'}
-              </motion.button>
-              
-              <div className="h-6 w-px bg-cyan-900/30" />
-              
-              {/* Auto-run Toggle */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setAutoRun(!autoRun)}
-                className={`cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 font-fira-code text-xs font-medium transition-all duration-300 ${
-                  autoRun 
-                    ? 'border-green-400 text-green-400 neon-text-green bg-green-500/10 pulse-glow' 
-                    : 'border-gray-500 text-gray-400 hover:border-green-400 hover:text-green-400'
-                }`}
-                title={autoRun ? 'Auto-run is ON' : 'Auto-run is OFF'}
-              >
-                {autoRun ? <Zap className="w-4 h-4 drop-shadow-glow" /> : <ZapOff className="w-4 h-4" />}
-                AUTO-RUN: {autoRun ? 'ON' : 'OFF'}
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setComponentFormat(componentFormat === 'styled' ? 'standard' : 'styled');
-                }}
-                className="cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 border-purple-400/50 text-purple-400 hover:neon-text-purple font-fira-code text-xs font-medium transition-all duration-300"
-                title="Convert component format"
-              >
-                <Wand2 className="w-4 h-4" />
-                CONVERT
-              </motion.button>
-              
-              {!autoRun && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={updatePreview}
-                  className="cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 border-green-400/50 text-green-400 hover:neon-text-green font-fira-code text-xs font-medium transition-all duration-300"
-                >
-                  <Play className="w-4 h-4" />
-                  RUN
-                </motion.button>
-              )}
-              
-              <div className="h-6 w-px bg-cyan-900/30" />
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={saveComponent}
-                className="cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 border-blue-400/50 text-blue-400 hover:text-cyan-400 hover:border-cyan-400 font-fira-code text-xs font-medium transition-all duration-300"
-              >
-                <Save className="w-4 h-4" />
-                {editingComponent ? 'UPDATE' : 'SAVE'}
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={copyToClipboard}
-                className="cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 border-blue-400/50 text-blue-400 hover:text-cyan-400 hover:border-cyan-400 font-fira-code text-xs font-medium transition-all duration-300"
-              >
-                <Copy className="w-4 h-4" />
-                COPY
-              </motion.button>
-              
-              <div className="h-6 w-px bg-cyan-900/30" />
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={exportComponents}
-                className="cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 border-green-400/50 text-green-400 hover:neon-text-green font-fira-code text-xs font-medium transition-all duration-300"
-                title="Export saved components"
-              >
-                <Download className="w-4 h-4" />
-                EXPORT
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={importComponents}
-                className="cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 border-green-400/50 text-green-400 hover:neon-text-green font-fira-code text-xs font-medium transition-all duration-300"
-                title="Import components"
-              >
-                <Upload className="w-4 h-4" />
-                IMPORT
-              </motion.button>
-              
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link
-                  href="/gallery"
-                  className="cyber-button tech-corners ripple flex items-center gap-2 px-4 py-2 border-purple-400/50 text-purple-400 hover:neon-text-purple font-fira-code text-xs font-medium transition-all duration-300"
-                >
-                  <FolderOpen className="w-4 h-4" />
-                  GALLERY
-                </Link>
-              </motion.div>
-              
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link
-                  href="/style-guide"
-                  className="cyber-button tech-corners ripple animated-border flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 text-cyan-400 hover:neon-text font-fira-code text-xs font-medium transition-all duration-300"
-                >
-                  <Sparkles className="w-4 h-4 drop-shadow-glow" />
-                  AI EDITOR
-                </Link>
-              </motion.div>
-            </div>
+            <ExpandingHeaderActions
+              toggleAllPanels={toggleAllPanels}
+              setAutoRun={setAutoRun}
+              convertComponent={convertComponent}
+              saveComponent={saveComponent}
+              copyToClipboard={copyToClipboard}
+              exportComponents={exportComponents}
+              importComponents={importComponents}
+              openGallery={openGallery}
+              openEditor={openEditor}
+              allPanelsCollapsed={allPanelsCollapsed}
+              autoRun={autoRun}
+            />
           </div>
         </motion.header>
 
         <div className="flex-1 flex overflow-hidden main-container">
           {/* Left Sidebar Navigation */}
-          <div className={`glass-panel border-r border-cyan-400/30 transition-all duration-300 holographic ${
+          <div className={`glass-panel border-r border-cyan-400/30 transition-all duration-300 ${
             leftSidebarCollapsed ? 'w-16' : 'w-64'
           }`}>
             {/* Sidebar Toggle Button */}
@@ -675,7 +566,7 @@ export default function KRE8Styler() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
             className={`bg-black/20 backdrop-blur-sm border-r border-cyan-900/30 transition-all duration-300 ${
-              allPanelsCollapsed ? 'w-48' : 'flex-1'
+              allPanelsCollapsed ? 'w-48' : 'w-2/5'
             }`}
           >
             <PanelGroup direction="vertical">
@@ -725,7 +616,7 @@ export default function KRE8Styler() {
                 )}
               </Panel>
               
-              <PanelResizeHandle className="h-2 bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent hover:via-cyan-400/60 transition-all duration-300 relative group animated-border" />
+              <PanelResizeHandle className="h-2 bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent hover:via-cyan-400/60 transition-all duration-300 relative group" />
 
               {/* Panel 2: Component Code Editor */}
               <Panel 
@@ -773,7 +664,7 @@ export default function KRE8Styler() {
                 )}
               </Panel>
               
-              <PanelResizeHandle className="h-2 bg-gradient-to-r from-transparent via-purple-500/30 to-transparent hover:via-purple-400/60 transition-all duration-300 relative group animated-border" />
+              <PanelResizeHandle className="h-2 bg-gradient-to-r from-transparent via-purple-500/30 to-transparent hover:via-purple-400/60 transition-all duration-300 relative group" />
 
               {/* Panel 3: AI Chat */}
               <Panel 
@@ -814,7 +705,7 @@ export default function KRE8Styler() {
                             }`}>
                               <div className="text-sm">{msg.content}</div>
                               <div className="text-xs text-gray-500 mt-1">
-                                {msg.timestamp.toLocaleTimeString()}
+                                {typeof window !== 'undefined' ? msg.timestamp.toLocaleTimeString() : ''}
                                 {msg.toolsUsed && (
                                   <span className="ml-2 text-cyan-400">• {msg.toolsUsed.join(', ')}</span>
                                 )}
@@ -861,47 +752,14 @@ export default function KRE8Styler() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
             className={`flex bg-black/20 backdrop-blur-sm transition-all duration-300 ${
-              allPanelsCollapsed ? 'flex-1' : 'w-1/2'
+              allPanelsCollapsed ? 'flex-1' : 'flex-1'
             }`}
           >
-            {/* Vertical Tab Strip */}
-            <div className="w-12 bg-black/40 border-r border-cyan-900/30 flex flex-col">
-              {[
-                { id: 'preview', icon: Eye, label: 'Preview', color: 'cyan' },
-                { id: 'library', icon: Library, label: 'Library', color: 'purple' },
-                { id: 'saved', icon: Archive, label: 'Saved', color: 'green' },
-                { id: 'settings', icon: Cog, label: 'Settings', color: 'orange' }
-              ].map(tab => {
-                const IconComponent = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <motion.button
-                    key={tab.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`relative w-12 h-12 flex items-center justify-center group transition-all duration-300 ${
-                      isActive 
-                        ? `bg-${tab.color}-500/20 text-${tab.color}-400 shadow-lg` 
-                        : `text-gray-500 hover:text-${tab.color}-400 hover:bg-${tab.color}-500/10`
-                    }`}
-                    title={tab.label}
-                  >
-                    <IconComponent className={`w-5 h-5 transition-transform group-hover:scale-110 ${
-                      isActive ? 'drop-shadow-glow' : ''
-                    }`} />
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeTabIndicator"
-                        className={`absolute left-0 top-0 w-1 h-full bg-${tab.color}-400 rounded-r`}
-                        initial={false}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
+            {/* Expanding Vertical Tabs */}
+            <ExpandingVerticalTabs 
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
 
             {/* Tab Content */}
             <div className="flex-1 flex flex-col">
@@ -1017,7 +875,10 @@ export default function KRE8Styler() {
                               >
                                 <h4 className="font-medium text-white text-lg">{component.name}</h4>
                                 <p className="text-sm text-gray-400 mt-1">
-                                  {component.timestamp.toLocaleDateString()} • {component.timestamp.toLocaleTimeString()}
+                                  {typeof window !== 'undefined' 
+                                    ? `${component.timestamp.toLocaleDateString()} • ${component.timestamp.toLocaleTimeString()}`
+                                    : ''
+                                  }
                                 </p>
                                 {component.tags && component.tags.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mt-3">
@@ -1050,24 +911,126 @@ export default function KRE8Styler() {
                           <div className="space-y-3">
                             <h3 className="text-lg font-orbitron font-bold neon-text-orange">PREVIEW SETTINGS</h3>
                             <div className="space-y-2">
-                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20">
+                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
                                 <span className="text-gray-300">Auto-run on code change</span>
                                 <input
                                   type="checkbox"
                                   checked={autoRun}
                                   onChange={(e) => setAutoRun(e.target.checked)}
-                                  className="ml-2"
+                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
                                 />
                               </label>
-                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20">
+                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <span className="text-gray-300">Live preview refresh</span>
+                                <input
+                                  type="checkbox"
+                                  checked={true}
+                                  onChange={(e) => {}}
+                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                />
+                              </label>
+                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
                                 <label className="block text-gray-300 mb-2">Component Format</label>
                                 <select 
                                   value={componentFormat} 
                                   onChange={(e) => setComponentFormat(e.target.value as 'standard' | 'styled')}
-                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white"
+                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white hover:border-orange-500/50 transition-colors"
                                 >
                                   <option value="standard">Standard React</option>
                                   <option value="styled">Styled Components</option>
+                                </select>
+                              </div>
+                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <label className="block text-gray-300 mb-2">Preview Background</label>
+                                <select 
+                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white hover:border-orange-500/50 transition-colors"
+                                >
+                                  <option value="gradient">Gradient</option>
+                                  <option value="dark">Dark</option>
+                                  <option value="light">Light</option>
+                                  <option value="transparent">Transparent</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Editor Settings */}
+                          <div className="space-y-3">
+                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">EDITOR SETTINGS</h3>
+                            <div className="space-y-2">
+                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <label className="block text-gray-300 mb-2">Editor Theme</label>
+                                <select 
+                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white hover:border-orange-500/50 transition-colors"
+                                >
+                                  <option value="vs-dark">VS Dark</option>
+                                  <option value="monokai">Monokai</option>
+                                  <option value="github-dark">GitHub Dark</option>
+                                  <option value="dracula">Dracula</option>
+                                </select>
+                              </div>
+                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <label className="block text-gray-300 mb-2">Font Size</label>
+                                <input 
+                                  type="range"
+                                  min="12"
+                                  max="20"
+                                  defaultValue="14"
+                                  className="w-full"
+                                />
+                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                  <span>12px</span>
+                                  <span>14px</span>
+                                  <span>20px</span>
+                                </div>
+                              </div>
+                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <span className="text-gray-300">Enable minimap</span>
+                                <input
+                                  type="checkbox"
+                                  defaultChecked={true}
+                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                />
+                              </label>
+                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <span className="text-gray-300">Word wrap</span>
+                                <input
+                                  type="checkbox"
+                                  defaultChecked={false}
+                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* AI Settings */}
+                          <div className="space-y-3">
+                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">AI ASSISTANT</h3>
+                            <div className="space-y-2">
+                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <span className="text-gray-300">Enable AI suggestions</span>
+                                <input
+                                  type="checkbox"
+                                  defaultChecked={true}
+                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                />
+                              </label>
+                              <label className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <span className="text-gray-300">Auto-complete code</span>
+                                <input
+                                  type="checkbox"
+                                  defaultChecked={false}
+                                  className="ml-2 w-5 h-5 rounded text-orange-500 focus:ring-orange-500 focus:ring-2"
+                                />
+                              </label>
+                              <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20 hover:border-orange-500/40 transition-colors">
+                                <label className="block text-gray-300 mb-2">AI Model</label>
+                                <select 
+                                  className="w-full bg-black/50 border border-orange-500/30 rounded px-3 py-2 text-white hover:border-orange-500/50 transition-colors"
+                                >
+                                  <option value="claude-3">Claude 3 (Default)</option>
+                                  <option value="gpt-4">GPT-4</option>
+                                  <option value="local">Local Model</option>
                                 </select>
                               </div>
                             </div>
@@ -1075,22 +1038,42 @@ export default function KRE8Styler() {
 
                           {/* Export/Import */}
                           <div className="space-y-3">
-                            <h3 className="text-lg font-medium text-orange-400">Data Management</h3>
+                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">DATA MANAGEMENT</h3>
                             <div className="flex gap-2">
                               <button
                                 onClick={exportComponents}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-colors border border-green-500/20"
+                                className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-colors border border-green-500/20 hover:border-green-500/40"
                               >
                                 <Download className="w-4 h-4" />
                                 Export
                               </button>
                               <button
                                 onClick={importComponents}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors border border-blue-500/20"
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors border border-blue-500/20 hover:border-blue-500/40"
                               >
                                 <Upload className="w-4 h-4" />
                                 Import
                               </button>
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (confirm('Are you sure you want to clear all saved components?')) {
+                                  localStorage.removeItem('kre8-components');
+                                  setSavedComponents([]);
+                                }
+                              }}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors border border-red-500/20 hover:border-red-500/40"
+                            >
+                              Clear All Data
+                            </button>
+                          </div>
+
+                          {/* About */}
+                          <div className="space-y-3">
+                            <h3 className="text-lg font-orbitron font-bold neon-text-orange">ABOUT</h3>
+                            <div className="p-3 bg-gray-900/50 rounded-lg border border-orange-500/20">
+                              <p className="text-gray-400 text-sm">KRE8 Styler Lab v1.0.0</p>
+                              <p className="text-gray-500 text-xs mt-1">AI-powered component styling assistant</p>
                             </div>
                           </div>
                         </div>

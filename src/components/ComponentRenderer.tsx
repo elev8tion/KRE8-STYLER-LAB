@@ -28,7 +28,26 @@ export default function ComponentRenderer({ code, css }: ComponentRendererProps)
 
   const Component = useMemo(() => {
     try {
-      // Clean the code
+      // Check if code contains JSX
+      if (code.includes('<') && code.includes('>')) {
+        // For JSX components, we need to handle them differently
+        // Return a placeholder that shows the code needs to be compiled
+        return () => (
+          <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+            <p className="text-blue-400 font-semibold mb-2">Component Preview</p>
+            <p className="text-blue-300 text-sm mb-3">
+              This component contains JSX and requires compilation to render.
+            </p>
+            <div className="mt-3 p-3 bg-black/30 rounded">
+              <pre className="text-xs text-gray-400 overflow-auto">
+                <code>{code.slice(0, 200)}...</code>
+              </pre>
+            </div>
+          </div>
+        );
+      }
+
+      // Clean the code for non-JSX components
       const cleanCode = code
         .replace(/^import.*$/gm, '')
         .replace(/^export\s+default\s+/gm, '')
@@ -38,11 +57,13 @@ export default function ComponentRenderer({ code, css }: ComponentRendererProps)
       const functionMatch = cleanCode.match(/function\s+(\w+)/);
       const componentName = functionMatch ? functionMatch[1] : 'Component';
 
-      // Create component with proper scope
+      // Create component with proper scope (only for non-JSX code)
       const componentFactory = new Function(
         'React',
         `
         const { useState, useEffect, useCallback, useMemo, useRef } = React;
+        const { createElement: h } = React;
+        
         ${cleanCode}
         
         // Return the component
@@ -52,7 +73,7 @@ export default function ComponentRenderer({ code, css }: ComponentRendererProps)
         
         // Fallback for inline components
         return function() {
-          return React.createElement('div', { 
+          return h('div', { 
             className: 'p-4 text-gray-400' 
           }, 'No component found');
         };

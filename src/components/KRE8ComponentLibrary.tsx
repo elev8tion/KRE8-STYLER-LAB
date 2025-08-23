@@ -1,10 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import ParticleCard from './ParticleCard';
 import { 
-  Layout, Button, Type, Square, Circle, Triangle,
-  Image, Sliders, Grid, Layers, Box, Zap,
-  Shield, Cpu, Cloud, Database, Terminal, GitBranch
+  Box, Shield, Cpu, Database, Terminal, Zap, Code2, Layers, Cloud
 } from 'lucide-react';
 
 interface ComponentTemplate {
@@ -412,6 +412,241 @@ const templates: ComponentTemplate[] = [
 }`
   },
 
+  // Glitch Button
+  {
+    name: 'Glitch Button',
+    icon: <Zap className="w-4 h-4" />,
+    category: 'Buttons',
+    code: `function GlitchButton() {
+  const [isGlitching, setIsGlitching] = useState(false);
+  
+  return (
+    <button 
+      className={\`glitch-btn \${isGlitching ? 'glitching' : ''}\`}
+      onMouseEnter={() => setIsGlitching(true)}
+      onMouseLeave={() => setIsGlitching(false)}
+    >
+      <span data-text="EXECUTE">EXECUTE</span>
+    </button>
+  );
+}`,
+    css: `.glitch-btn {
+  position: relative;
+  padding: 1.2rem 3rem;
+  background: linear-gradient(45deg, #00ffcc, #00ccff);
+  border: none;
+  color: #000;
+  font-weight: 900;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s;
+  clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+}
+
+.glitch-btn:hover {
+  transform: scale(1.05);
+  filter: brightness(1.2);
+}
+
+.glitch-btn.glitching span {
+  animation: glitch-anim 0.3s infinite;
+}
+
+.glitch-btn.glitching span::before,
+.glitch-btn.glitching span::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.glitch-btn.glitching span::before {
+  animation: glitch-anim-1 0.2s infinite;
+  color: #00ffcc;
+  z-index: -1;
+}
+
+.glitch-btn.glitching span::after {
+  animation: glitch-anim-2 0.2s infinite;
+  color: #ff00cc;
+  z-index: -2;
+}
+
+@keyframes glitch-anim {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(2px, -2px); }
+  60% { transform: translate(-2px, -2px); }
+}
+
+@keyframes glitch-anim-1 {
+  0%, 100% { clip-path: inset(0 0 100% 0); }
+  25% { clip-path: inset(0 0 50% 0); }
+  50% { clip-path: inset(50% 0 0 0); }
+  75% { clip-path: inset(0 0 30% 0); }
+}
+
+@keyframes glitch-anim-2 {
+  0%, 100% { clip-path: inset(100% 0 0 0); }
+  25% { clip-path: inset(50% 0 0 0); }
+  50% { clip-path: inset(0 0 50% 0); }
+  75% { clip-path: inset(30% 0 0 0); }
+}`
+  },
+
+  // Matrix Rain
+  {
+    name: 'Matrix Rain',
+    icon: <Code2 className="w-4 h-4" />,
+    category: 'Effects',
+    code: `function MatrixRain() {
+  const [drops, setDrops] = useState([]);
+  
+  useEffect(() => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()';
+    const newDrops = Array.from({length: 20}, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 2 + Math.random() * 3,
+      chars: Array.from({length: 15}, () => chars[Math.floor(Math.random() * chars.length)])
+    }));
+    setDrops(newDrops);
+  }, []);
+  
+  return (
+    <div className="matrix-container">
+      {drops.map(drop => (
+        <div 
+          key={drop.id} 
+          className="matrix-drop"
+          style={{
+            left: \`\${drop.x}%\`,
+            animationDelay: \`\${drop.delay}s\`,
+            animationDuration: \`\${drop.duration}s\`
+          }}
+        >
+          {drop.chars.map((char, i) => (
+            <span key={i} style={{opacity: 1 - (i * 0.06)}}>{char}</span>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}`,
+    css: `.matrix-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  background: #000;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.matrix-drop {
+  position: absolute;
+  top: -100%;
+  color: #00ff00;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.2;
+  animation: matrix-fall linear infinite;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.matrix-drop span {
+  display: block;
+}
+
+@keyframes matrix-fall {
+  to {
+    top: 100%;
+  }
+}`
+  },
+
+  // Neon Card
+  {
+    name: 'Neon Card',
+    icon: <Layers className="w-4 h-4" />,
+    category: 'Cards',
+    code: `function NeonCard() {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <div 
+      className="neon-card"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="neon-border"></div>
+      <div className="neon-content">
+        <h3>NEON VIBES</h3>
+        <p>Cyberpunk aesthetic card with animated borders</p>
+      </div>
+    </div>
+  );
+}`,
+    css: `.neon-card {
+  position: relative;
+  width: 300px;
+  height: 200px;
+  background: #0a0a0a;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.neon-border {
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, #00ffcc, #ff00cc, #ffcc00, #00ccff);
+  border-radius: 15px;
+  animation: rotate 3s linear infinite;
+  z-index: -1;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.neon-card::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: #0a0a0a;
+  border-radius: 13px;
+  z-index: 1;
+}
+
+.neon-content {
+  position: relative;
+  z-index: 2;
+  padding: 2rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.neon-content h3 {
+  color: #00ffcc;
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 20px #00ffcc;
+}
+
+.neon-content p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}`
+  },
+
   // Terminal Interface
   {
     name: 'Terminal UI',
@@ -550,42 +785,114 @@ interface Props {
 
 export default function KRE8ComponentLibrary({ onSelectTemplate, isOpen, embedded = false }: Props) {
   const categories = [...new Set(templates.map(t => t.category))];
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Color mapping for categories
+  const categoryColors: { [key: string]: string } = {
+    'Heroes': '#00ffcc',
+    'Cards': '#ff00ff',
+    'Buttons': '#00ff88',
+    'Data': '#ff9900',
+    'Interfaces': '#00ccff',
+    'Effects': '#ffcc00'
+  };
 
   if (embedded) {
     return (
-      <div className="w-full">
-        {categories.map(category => (
-          <div key={category} className="mb-6">
-            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider mb-3">
-              {category}
-            </h3>
-            <div className="grid grid-cols-1 gap-3">
-              {templates
-                .filter(t => t.category === category)
-                .map(template => (
-                  <motion.button
-                    key={template.name}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => onSelectTemplate(template)}
-                    className="w-full flex items-center gap-3 p-4 bg-gray-900/50 hover:bg-purple-500/10 border border-purple-500/10 hover:border-purple-500/30 rounded-lg transition-all"
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center text-cyan-400">
-                      {template.icon}
-                    </div>
-                    <div className="text-left">
-                      <span className="text-gray-300 font-medium block">
-                        {template.name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        Click to load template
-                      </span>
-                    </div>
-                  </motion.button>
-                ))}
+      <div className="w-full h-full overflow-y-auto">
+        {/* Category Filter - Circular Button Style */}
+        <div className="flex gap-4 mb-6 pt-8 px-4 justify-center">
+          {/* All button */}
+          <motion.button
+            onClick={() => setSelectedCategory(null)}
+            className="relative"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <div className={`
+              w-16 h-16 rounded-full
+              bg-gradient-to-br from-cyan-500/20 to-purple-500/20
+              border-2 ${!selectedCategory ? 'border-cyan-400' : 'border-cyan-500/40'}
+              flex items-center justify-center
+              text-cyan-400 font-bold text-xs
+              transition-all duration-300
+              ${!selectedCategory ? 'shadow-[0_0_30px_rgba(0,255,204,0.5)]' : 'hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]'}
+            `}>
+              ALL
             </div>
+          </motion.button>
+
+          {/* Category buttons */}
+          {categories.map(category => (
+            <motion.button
+              key={category}
+              onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
+              className="relative"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div 
+                className={`
+                  w-16 h-16 rounded-full
+                  bg-black/60 backdrop-blur-sm
+                  border-2 transition-all duration-300
+                  flex items-center justify-center
+                  font-bold text-[10px]
+                  ${selectedCategory === category 
+                    ? 'shadow-[0_0_30px_rgba(0,255,204,0.5)]' 
+                    : 'hover:shadow-[0_0_20px_rgba(0,255,204,0.3)]'}
+                `}
+                style={{
+                  borderColor: selectedCategory === category 
+                    ? categoryColors[category] 
+                    : `${categoryColors[category]}66`,
+                  color: categoryColors[category],
+                  textShadow: selectedCategory === category 
+                    ? `0 0 10px ${categoryColors[category]}` 
+                    : 'none'
+                }}
+              >
+                {category.slice(0, 3).toUpperCase()}
+              </div>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Template Grid with Particle Cards - Centered */}
+        <div className="flex justify-center items-start min-h-full px-8 pb-4" style={{ marginTop: '75px' }}>
+          <div className="grid grid-cols-3 gap-x-12 gap-y-8 max-w-[700px]">
+            {templates
+              .filter(t => !selectedCategory || t.category === selectedCategory)
+              .map((template, index) => (
+                <motion.div
+                  key={template.name}
+                  initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                  animate={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    rotate: 0,
+                    transition: {
+                      delay: index * 0.05,
+                      duration: 0.5,
+                      type: "spring",
+                      stiffness: 200
+                    }
+                  }}
+                  whileHover={{ 
+                    y: -5,
+                    transition: { duration: 0.2 }
+                  }}
+                >
+                  <ParticleCard
+                    text={template.name}
+                    color={categoryColors[template.category] || '#00ffcc'}
+                    icon={template.icon}
+                    onClick={() => onSelectTemplate(template)}
+                  />
+                </motion.div>
+              ))}
           </div>
-        ))}
+        </div>
       </div>
     );
   }
